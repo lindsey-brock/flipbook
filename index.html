@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Parlor — Borderlands of Identity</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#0a0a0a;font-family:'Source Serif 4',Georgia,serif;height:100%;overflow:hidden}
+
+/* MODAL OVERLAY */
+.flipbook-modal{
+  display:none;
+  position:fixed;inset:0;
+  z-index:10000;
+  background:rgba(0,0,0,0.97);
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+.flipbook-modal.open{display:flex;}
+
+/* CLOSE BUTTON */
+.fb-close{
+  position:absolute;top:16px;right:20px;
+  background:none;border:1px solid rgba(255,255,255,0.2);
+  color:rgba(255,255,255,0.6);
+  font-family:'Source Serif 4',Georgia,serif;
+  font-size:11px;letter-spacing:0.15em;text-transform:uppercase;
+  padding:7px 14px;cursor:pointer;
+  transition:all 0.2s;
+}
+.fb-close:hover{border-color:#f2b8c6;color:#f2b8c6;}
+
+/* HEADER */
+.fb-header{
+  position:absolute;top:16px;left:20px;
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:13px;font-style:italic;
+  color:rgba(255,255,255,0.4);
+  letter-spacing:0.05em;
+}
+
+/* VIEWER */
+.fb-viewer{
+  width:100%;
+  max-width:1100px;
+  padding:0 64px;
+  position:relative;
+}
+
+/* SPREAD */
+.fb-spread{
+  display:none;
+  width:100%;
+}
+.fb-spread.active{display:grid;}
+.fb-spread.single{grid-template-columns:1fr;max-width:480px;margin:0 auto;}
+.fb-spread.double{grid-template-columns:1fr 1fr;gap:3px;}
+
+.fb-page{
+  position:relative;
+  background:#111;
+  overflow:hidden;
+}
+.fb-page img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  max-height:78vh;
+}
+
+/* SPINE */
+.fb-spread.double::after{
+  content:'';
+  position:absolute;
+  left:50%;top:0;bottom:0;
+  width:6px;
+  background:linear-gradient(to right,#000,#1a1a1a 40%,#1a1a1a 60%,#000);
+  transform:translateX(-50%);
+  pointer-events:none;
+  z-index:2;
+}
+.fb-spread{position:relative;}
+
+/* NAVIGATION */
+.fb-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  width:100%;
+  max-width:1100px;
+  padding:14px 64px 0;
+}
+.fb-btn{
+  background:none;
+  border:1px solid rgba(255,255,255,0.2);
+  color:rgba(255,255,255,0.6);
+  font-family:'Source Serif 4',Georgia,serif;
+  font-size:11px;letter-spacing:0.12em;text-transform:uppercase;
+  padding:9px 22px;cursor:pointer;
+  transition:all 0.2s;
+  min-width:110px;
+}
+.fb-btn:hover:not(:disabled){border-color:#f2b8c6;color:#f2b8c6;}
+.fb-btn:disabled{opacity:0.2;cursor:default;}
+
+.fb-counter{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:13px;font-style:italic;
+  color:rgba(255,255,255,0.4);
+  letter-spacing:0.05em;
+  text-align:center;
+  min-width:160px;
+}
+
+/* PROGRESS BAR */
+.fb-progress-wrap{
+  width:100%;max-width:1100px;
+  padding:10px 64px 0;
+}
+.fb-progress-track{
+  width:100%;height:1px;
+  background:rgba(255,255,255,0.1);
+  position:relative;
+}
+.fb-progress-fill{
+  height:100%;
+  background:#f2b8c6;
+  transition:width 0.3s ease;
+}
+
+/* CHEVRON BUTTONS */
+.fb-chev{
+  position:absolute;
+  top:50%;transform:translateY(-50%);
+  width:44px;height:44px;
+  background:rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.15);
+  color:rgba(255,255,255,0.5);
+  font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:all 0.2s;
+  z-index:10;
+}
+.fb-chev:hover{border-color:#f2b8c6;color:#f2b8c6;}
+.fb-chev.left{left:8px;}
+.fb-chev.right{right:8px;}
+.fb-chev:disabled{opacity:0.15;cursor:default;}
+
+/* TRIGGER BUTTON (shown on index page) */
+.fb-trigger{
+  display:inline-flex;align-items:center;gap:10px;
+  background:none;
+  border:1px solid rgba(245,240,232,0.15);
+  color:rgba(245,240,232,0.7);
+  font-family:'DM Sans',sans-serif;
+  font-size:11px;font-weight:500;
+  letter-spacing:0.15em;text-transform:uppercase;
+  padding:14px 28px;cursor:pointer;
+  transition:all 0.2s;
+}
+.fb-trigger:hover{border-color:#e8c547;color:#e8c547;}
+</style>
+</head>
+<body>
+
+<!-- FLIPBOOK MODAL -->
+<div class="flipbook-modal" id="flipbookModal">
+  <div class="fb-header">The Parlor Magazine — Vol. I: Borderlands of Identity</div>
+  <button class="fb-close" onclick="closeFlipbook()">✕ Close</button>
+
+  <div class="fb-viewer">
+    <button class="fb-chev left" id="fbPrev" onclick="fbPrev()">‹</button>
+    <button class="fb-chev right" id="fbNext" onclick="fbNext()">›</button>
+    <div id="fbSpreads"></div>
+  </div>
+
+  <div class="fb-nav">
+    <button class="fb-btn" id="fbPrevBtn" onclick="fbPrev()">← Previous</button>
+    <div class="fb-counter" id="fbCounter"></div>
+    <button class="fb-btn" id="fbNextBtn" onclick="fbNext()">Next →</button>
+  </div>
+
+  <div class="fb-progress-wrap">
+    <div class="fb-progress-track">
+      <div class="fb-progress-fill" id="fbProgress"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PAGES = ["https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711475/1_xjugd4.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711375/2_mbp2zw.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711425/3_r8dasv.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711380/4_lpr751.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711471/5_yafeeu.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711383/6_y4hf6a.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711395/7_easwrn.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711370/8_xbaqtf.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711381/9_zbaw5q.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711414/10_zagq6s.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711385/11_hpajnv.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711412/12_vtzfaz.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711373/13_ei1q85.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711393/14_qdznpc.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711376/15_pkq8cs.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711378/16_zimu6h.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711373/17_sprn0w.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711412/18_chfcso.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711401/19_ru3iti.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711397/20_ghtfm2.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711423/21_runjkz.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711387/22_i6qe4s.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711436/23_vefp13.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711415/24_diph1j.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711424/25_fsdzno.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711400/26_oqxumz.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711395/27_gtmeu2.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711369/28_bbvake.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711384/29_u2nfwc.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711410/30_hd5bn8.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711408/31_wgbqup.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711398/32_ibzea3.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711376/33_ftqlqz.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711393/34_tfpr44.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711418/35_hanmba.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711408/36_xruida.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711376/37_wxzb7a.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711399/38_mibkgw.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711404/39_xsvrmj.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711425/40_xij522.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711387/41_w70bfo.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711419/42_tumvhg.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711432/43_thhmcu.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711411/44_nkix7u.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711407/45_falivq.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711405/46_ecy9lz.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711402/47_geh4ei.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711367/48_mlsbgw.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711367/49_hkmpvg.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711413/50_bbagox.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711395/51_bcylbm.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711405/52_ucmlui.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711405/53_xrigr9.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711445/54_f1etaj.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711417/55_quiffn.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711407/56_jf8tdr.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711400/57_m1vrxs.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711369/58_ll33lf.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711377/59_gi5ikm.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711366/60_kfdxcq.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711374/61_rfe1f9.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711442/62_pdm6zc.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711364/63_fynwgg.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711380/64_r9egmk.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711367/65_edzfwt.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711367/66_xolxgi.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711369/67_bemojx.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711425/68_ydygyn.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711407/69_d806a4.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711378/70_v0h6lo.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711373/71_dcgjlq.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711369/72_amef1c.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711434/73_sdyvyk.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711373/74_od8ojy.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711453/75_a5oxiv.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711459/76_sbhjn2.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711465/77_nzupfs.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711450/78_olp4iq.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711474/79_vpldgr.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711468/80_rbfrxo.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711469/81_tqkefm.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711467/82_cwoh3g.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711381/83_kpb87q.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711437/84_pgmmot.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711449/85_w9ix0x.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711417/86_ms6ehe.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711392/87_wekne3.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711365/88_pnbxca.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711365/89_sdfiy7.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711403/90_lwo8rt.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711442/91_mhthul.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711384/92_ag4hvk.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711417/93_vlruwh.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711397/94_buwzm8.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711412/95_lfmrmx.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711409/96_egyabm.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711389/97_rd9tsh.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711368/98_gogrfh.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711381/99_ztwsva.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711384/100_omhuju.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711388/101_mwlmgn.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711388/102_sflzw9.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711401/103_fyfuob.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711390/104_w5ckyu.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711369/105_q5woni.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711394/106_lrinrg.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711398/107_adpcau.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711406/108_yb0qc7.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711392/109_apizoz.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711386/110_xzinka.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711425/111_l4fbs5.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711390/112_wznqnw.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711393/113_qpiidc.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711388/114_kgm5mi.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711381/115_fycr7x.png","https://res.cloudinary.com/dmegrbq5k/image/upload/v1778711373/116_k4z8ou.png"];
+
+// Build spreads: cover alone, then pairs
+// Spread 0: page 1 (cover) — single
+// Spread 1: pages 2-3
+// Spread 2: pages 4-5
+// etc.
+const spreads = [];
+spreads.push({ type: 'single', pages: [0] }); // cover
+for (let i = 1; i < PAGES.length; i += 2) {
+  if (i + 1 < PAGES.length) {
+    spreads.push({ type: 'double', pages: [i, i + 1] });
+  } else {
+    spreads.push({ type: 'single', pages: [i] });
+  }
+}
+
+let current = 0;
+
+function buildSpreads() {
+  const container = document.getElementById('fbSpreads');
+  container.innerHTML = '';
+  spreads.forEach((spread, idx) => {
+    const div = document.createElement('div');
+    div.className = 'fb-spread ' + spread.type + (idx === 0 ? ' active' : '');
+    div.id = 'spread-' + idx;
+    spread.pages.forEach(pageIdx => {
+      const page = document.createElement('div');
+      page.className = 'fb-page';
+      const img = document.createElement('img');
+      img.src = PAGES[pageIdx];
+      img.alt = 'Page ' + (pageIdx + 1);
+      img.loading = idx === 0 ? 'eager' : 'lazy';
+      page.appendChild(img);
+      div.appendChild(page);
+    });
+    container.appendChild(div);
+  });
+}
+
+function goTo(n) {
+  current = Math.max(0, Math.min(spreads.length - 1, n));
+  document.querySelectorAll('.fb-spread').forEach((s, i) => {
+    s.classList.toggle('active', i === current);
+  });
+  updateUI();
+  // Preload next spread
+  if (current + 1 < spreads.length) {
+    spreads[current + 1].pages.forEach(p => {
+      const img = new Image();
+      img.src = PAGES[p];
+    });
+  }
+}
+
+function fbPrev() { goTo(current - 1); }
+function fbNext() { goTo(current + 1); }
+
+function updateUI() {
+  const spread = spreads[current];
+  const firstPage = spread.pages[0] + 1;
+  const lastPage = spread.pages[spread.pages.length - 1] + 1;
+  const pageLabel = spread.type === 'single'
+    ? 'Page ' + firstPage
+    : 'Pages ' + firstPage + '–' + lastPage;
+
+  document.getElementById('fbCounter').textContent =
+    pageLabel + ' of ' + PAGES.length;
+
+  document.getElementById('fbPrev').disabled = current === 0;
+  document.getElementById('fbNext').disabled = current === spreads.length - 1;
+  document.getElementById('fbPrevBtn').disabled = current === 0;
+  document.getElementById('fbNextBtn').disabled = current === spreads.length - 1;
+
+  const pct = (current / (spreads.length - 1)) * 100;
+  document.getElementById('fbProgress').style.width = pct + '%';
+}
+
+function openFlipbook(startSpread) {
+  buildSpreads();
+  current = startSpread || 0;
+  goTo(current);
+  document.getElementById('flipbookModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFlipbook() {
+  document.getElementById('flipbookModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Keyboard
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('flipbookModal').classList.contains('open')) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') fbNext();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') fbPrev();
+  if (e.key === 'Escape') closeFlipbook();
+});
+
+// Touch swipe
+let touchStartX = 0;
+document.getElementById('flipbookModal').addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+}, { passive: true });
+document.getElementById('flipbookModal').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) {
+    if (dx < 0) fbNext();
+    else fbPrev();
+  }
+}, { passive: true });
+
+// Auto-open if this file is loaded standalone
+window.addEventListener('load', function() {
+  // If embedded as modal in index.html, openFlipbook() is called externally.
+  // If opened directly, auto-open.
+  if (window.location.pathname.endsWith('flipbook.html')) {
+    openFlipbook(0);
+  }
+});
+</script>
+</body>
+</html>
